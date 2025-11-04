@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
 @Entity
@@ -15,32 +15,30 @@ public class Reports {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    // NDVI trebuie sa fie intre -1 si 1
-    @DecimalMin(value = "-1.0", message = "NDVI nu poate fi sub -1.0")
-    @DecimalMax(value = "1.0", message = "NDVI nu poate fi peste 1.0")
+    @DecimalMin(value = "-1.0", message = "NDVI cannot be below -1.0")
+    @DecimalMax(value = "1.0", message = "NDVI cannot exceed 1.0")
     private Double ndviValue;
     
-    // Temperatura, de exemplu, sa nu fie sub -50 si peste 60 de grade C
-    @DecimalMin(value = "-50.0", message = "Temperatura nu poate fi sub -50°C")
-    @DecimalMax(value = "60.0", message = "Temperatura nu poate fi peste 60°C")
+    @DecimalMin(value = "-50.0", message = "Temperature cannot be below -50°C")
+    @DecimalMax(value = "60.0", message = "Temperature cannot exceed 60°C")
     private Double temperatureValue;
     
-    @PositiveOrZero(message = "Precipitațiile nu pot fi negative")
+    @PositiveOrZero(message = "Precipitation cannot be negative")
     private Double precipitationValue;
 
     @Column(columnDefinition = "TEXT")
     private String aiInterpretation;
 
-    @NotNull(message = "Data raportului este obligatorie")
+    @NotNull(message = "Report date is required")
     private LocalDateTime reportDate;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "location_id", nullable = false)
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties({"reports"}) // Prevents circular reference
     private Location location;
     
-    // Metrici suplimentare care nu sunt salvate în BD, dar sunt incluse în response JSON
-    // Acestea vor fi setate programatic înainte de serializare
+    // Additional metrics not stored in DB but included in JSON response
+    // These are set programmatically before serialization
     @Transient
     @JsonProperty("eviValue")
     private Double eviValue;

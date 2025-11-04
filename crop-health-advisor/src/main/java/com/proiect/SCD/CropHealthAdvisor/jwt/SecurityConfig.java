@@ -15,6 +15,10 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder; // Folo
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
@@ -51,23 +55,34 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(false); // Allows null origin for desktop applications
+        configuration.setMaxAge(3600L);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors().and() // Permite configurarea CORS din CorsConfig.java
-            .csrf().disable() // Dezactiveaza CSRF (Token-ul JWT il inlocuieste)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf().disable() // JWT token replaces CSRF
             
-            // Gestioneaza erorile de autentificare (ex: token lipsa)
             .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and() 
             
-            // Nu folosim sesiuni, deoarece folosim JWT
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and() 
             
             .authorizeHttpRequests(authorize -> authorize
-                // Permite accesul public la inregistrare si login
                 .requestMatchers("/api/auth/**").permitAll() 
+                .requestMatchers("/api/users/register").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 
-                // Toate celelalte cereri (locations, reports) necesita autentificare
                 .anyRequest().authenticated() 
             );
 

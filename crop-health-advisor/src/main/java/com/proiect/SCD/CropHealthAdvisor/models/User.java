@@ -8,7 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor; 
 import lombok.AllArgsConstructor; 
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 @Entity
@@ -20,23 +21,27 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Username-ul este obligatoriu")
-    @Size(min = 3, max = 45, message = "Username-ul trebuie sa aiba intre 3 si 45 de caractere")
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 45, message = "Username must be between 3 and 45 characters")
     private String username;
 
-    @NotBlank(message = "Email-ul este obligatoriu")
+    @NotBlank(message = "Email is required")
     @Email(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$",
-           message = "Formatul email-ului este invalid (ex: a@b.c)")
+           message = "Invalid email format (e.g: a@b.c)")
 
     @Column(unique = true)
     private String email;
 
-    @NotBlank(message = "Parola este obligatorie")
-    @Size(min = 8, message = "Parola trebuie sa aiba minim 8 caractere")
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    // Lista de locatii asociate utilizatorului
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @JsonProperty("role") // Ensures role is included in JSON
+    private Role role = Role.USER;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonIgnoreProperties({"user", "reports"}) // Prevents circular reference
     private List<Location> locations;
 }

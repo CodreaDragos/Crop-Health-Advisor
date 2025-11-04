@@ -25,34 +25,38 @@ public class ReportService {
     
     @Autowired
     private ReportRepository reportRepository;
-public Mono<Reports> generateAndSaveReport(Long locationId) {
-        
-        // 1. Caută Locația salvată în baza de date
+    /**
+     * Generates a new crop health report for a location.
+     * Fetches satellite data from Sentinel Hub API, generates AI interpretation,
+     * and saves the report to the database.
+     * 
+     * @param locationId The ID of the location to generate report for
+     * @return Mono containing the generated report
+     */
+    public Mono<Reports> generateAndSaveReport(Long locationId) {
         return Mono.fromCallable(() -> locationRepository.findById(locationId))
             .flatMap(locationOpt -> {
                 if (locationOpt.isEmpty()) {
-                    // Dacă Locația nu există, aruncăm o eroare
-                    return Mono.error(new RuntimeException("Locația cu ID-ul " + locationId + " nu a fost găsită."));
+                    return Mono.error(new RuntimeException("Location with ID " + locationId + " not found."));
                 }
                 
                 Location location = locationOpt.get();
                 double lat = location.getLatitude();
                 double lon = location.getLongitude();
                 
-                // 2. Apelul către Sentinel Hub API pentru date reale
+                // Fetch real-time satellite data from Sentinel Hub API
                 return satelliteDataService.getSatelliteMetrics(lat, lon)
                     .flatMap(metrics -> {
-                        // Folosim datele reale din Sentinel Hub
                         double ndviValue = metrics.getNdvi();
                         double eviValue = metrics.getEvi();
                         double ndwiValue = metrics.getNdwi();
-                        double temperatureValue = metrics.getTemperature(); // LST - temperatura solului
-                        double precipitationValue = metrics.getPrecipitation(); // Precipitații estimate din sateliți
-                        double soilMoistureValue = metrics.getSoilMoisture(); // Umiditate solului (%)
-                        double cloudCoverValue = metrics.getCloudCover(); // Acoperire nori (%)
-                        double evapotranspirationValue = metrics.getEvapotranspiration(); // Evapotranspirație (mm/zi)
+                        double temperatureValue = metrics.getTemperature(); // LST - Land Surface Temperature
+                        double precipitationValue = metrics.getPrecipitation(); // Estimated from satellite indices
+                        double soilMoistureValue = metrics.getSoilMoisture(); // Soil moisture (%)
+                        double cloudCoverValue = metrics.getCloudCover(); // Cloud cover (%)
+                        double evapotranspirationValue = metrics.getEvapotranspiration(); // Evapotranspiration (mm/day)
                         
-                        // 3. Creare prompt pentru AI - Simplificat, lasă AI-ul să analizeze toate datele
+                        // Create AI prompt for comprehensive crop analysis
                         String prompt = String.format(
                                 "Ești un expert în agricultură și monitorizare a culturilor prin date satelitare. " +
                                 "Analizează în detaliu următoarele date satelitare pentru o locație agricolă și oferă o analiză comprehensivă:\n\n" +
@@ -100,14 +104,12 @@ public Mono<Reports> generateAndSaveReport(Long locationId) {
 
                         return geminiAIService.getInterpretation(prompt)
                             .map(aiInterpretation -> {
-                                // 4. Creare și populare Report
                                 Reports report = new Reports();
-                                // Setează valorile calculate:
                                 report.setNdviValue(ndviValue);
                                 report.setTemperatureValue(temperatureValue);
                                 report.setPrecipitationValue(precipitationValue);
                                 
-                                // Setează metricile suplimentare (@Transient - nu sunt salvate în BD, dar sunt în JSON)
+                                // Additional metrics (@Transient - not saved in DB, but included in JSON response)
                                 report.setEviValue(eviValue);
                                 report.setNdwiValue(ndwiValue);
                                 report.setSoilMoisture(soilMoistureValue);
@@ -116,60 +118,32 @@ public Mono<Reports> generateAndSaveReport(Long locationId) {
                                 
                                 report.setAiInterpretation(aiInterpretation);
                                 report.setReportDate(LocalDateTime.now());
-                                report.setLocation(location); // <-- CHEIE STRĂINĂ
+                                report.setLocation(location);
                                 
                                 return report;
                             });
                     });
             })
-            .flatMap(report -> Mono.fromCallable(() -> reportRepository.save(report))); // 5. Salvare în BD
+            .flatMap(report -> Mono.fromCallable(() -> reportRepository.save(report)));
     }    
     /**
-     * ✅ METRICE OBȚINUTE DIN SENTINEL HUB API
-     * 
-     * Aceste valori sunt acum obținute direct de la Sentinel Hub Statistical API:
-     * 
-     * 1. NDVI (Normalized Difference Vegetation Index):
-     *    - Calculat direct în eval script: NDVI = (NIR - Red) / (NIR + Red)
-     *    - Folosește benzi Sentinel-2 (B04 = Red, B08 = NIR)
-     *    - Interval valid: -1.0 (sol gol/apă) până la 1.0 (vegetație foarte sănătoasă)
-     * 
-     * 2. EVI (Enhanced Vegetation Index):
-     *    - Calculat în eval script pentru analiză mai avansată
-     *    - Mai puțin sensibil la influența solului decât NDVI
-     * 
-     * 3. NDWI (Normalized Difference Water Index):
-     *    - Calculat în eval script pentru estimarea umidității
-     *    - Utilitar pentru detectarea stresului hidric al culturilor
-     * 
-     * 4. Temperatură:
-     *    - Momentan folosește mock (TODO: integrare cu OpenWeatherMap sau API termic)
-     * 
-     * 5. Precipitații:
-     *    - Momentan folosește mock (TODO: integrare cu OpenWeatherMap sau API precipitații)
-     * 
-     * NOTĂ: Metodele calculateNDVI, calculateTemperature, calculatePrecipitation au fost eliminate
-     * deoarece datele sunt acum obținute direct de la Sentinel Hub.
+     * Retrieves all reports for a specific location.
+     * Populates additional transient metrics (@Transient fields) with current data from Sentinel Hub API.
+     * These metrics are not stored in DB but included in JSON responses for better UI display.
      */
     public List<Reports> getReportsByLocationId(Long locationId) {
         List<Reports> reports = reportRepository.findByLocationId(locationId);
         
-        // Pentru rapoartele existente, populăm metricile suplimentare (@Transient)
-        // folosind datele actuale de la Sentinel Hub
         if (!reports.isEmpty() && reports.get(0).getLocation() != null) {
             Location location = reports.get(0).getLocation();
             
             try {
-                // Recalculează metricile actuale din Sentinel Hub API
-                // Folosim blocking pentru a popula datele înainte de return
                 var metrics = satelliteDataService.getSatelliteMetrics(
                     location.getLatitude(),
                     location.getLongitude()
                 ).block(java.time.Duration.ofSeconds(30));
                 
                 if (metrics != null) {
-                    // Populează metricile suplimentare pentru toate rapoartele din listă
-                    // (toate rapoartele sunt pentru aceeași locație, deci folosim aceleași metrici)
                     reports.forEach(report -> {
                         report.setEviValue(metrics.getEvi());
                         report.setNdwiValue(metrics.getNdwi());
@@ -181,14 +155,82 @@ public Mono<Reports> generateAndSaveReport(Long locationId) {
             } catch (Exception e) {
                 System.err.println("Error populating additional metrics for location " + locationId + ": " + e.getMessage());
                 e.printStackTrace();
-                // Lasă câmpurile null dacă nu putem recalcula - frontend-ul va afișa N/A
             }
         }
         
         return reports;
     }
     
-    // DELETE (Sterge un raport)
+    /**
+     * Retrieves all reports (for admin purposes).
+     */
+    public List<Reports> findAll() {
+        return reportRepository.findAll();
+    }
+
+    /**
+     * Finds a report by ID.
+     */
+    public java.util.Optional<Reports> findById(Long id) {
+        return reportRepository.findById(id);
+    }
+
+    /**
+     * Creates a new report or updates an existing one.
+     * For updates: loads existing entity and updates fields to avoid detached entity issues.
+     * Location can be changed but coordinates remain fixed for the selected location.
+     */
+    public Reports save(Reports report) {
+        boolean isUpdate = report.getId() != null && report.getId() > 0;
+        
+        if (isUpdate) {
+            java.util.Optional<Reports> existingReportOpt = reportRepository.findById(report.getId());
+            if (existingReportOpt.isEmpty()) {
+                throw new RuntimeException("Report with ID " + report.getId() + " does not exist.");
+            }
+            
+            Reports existingReport = existingReportOpt.get();
+            existingReport.setNdviValue(report.getNdviValue());
+            existingReport.setTemperatureValue(report.getTemperatureValue());
+            existingReport.setPrecipitationValue(report.getPrecipitationValue());
+            existingReport.setAiInterpretation(report.getAiInterpretation());
+            existingReport.setReportDate(report.getReportDate());
+            
+            if (report.getLocation() != null && report.getLocation().getId() != null) {
+                java.util.Optional<Location> locationOpt = locationRepository.findById(report.getLocation().getId());
+                if (locationOpt.isPresent()) {
+                    existingReport.setLocation(locationOpt.get());
+                } else {
+                    throw new RuntimeException("Specified location does not exist.");
+                }
+            }
+            
+            return reportRepository.save(existingReport);
+        } else {
+            if (report.getLocation() == null || report.getLocation().getId() == null) {
+                throw new RuntimeException("Report must have an associated location.");
+            }
+            
+            java.util.Optional<Location> locationOpt = locationRepository.findById(report.getLocation().getId());
+            if (locationOpt.isEmpty()) {
+                throw new RuntimeException("Specified location does not exist.");
+            }
+            
+            Location location = locationOpt.get();
+            report.setLocation(location);
+            
+            if (report.getReportDate() == null) {
+                report.setReportDate(LocalDateTime.now());
+            }
+            
+            return reportRepository.save(report);
+        }
+    }
+
+    /**
+     * Deletes a report by ID.
+     * @return true if report was deleted, false if not found
+     */
     public boolean deleteById(Long id) {
         if (reportRepository.existsById(id)) {
             reportRepository.deleteById(id);

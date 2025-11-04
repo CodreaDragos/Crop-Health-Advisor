@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller pentru generarea de imagini satelitare (NDVI maps, etc.)
+ * Controller for generating satellite images (NDVI maps, etc.).
  */
 @RestController
 @RequestMapping("/api/satellite")
@@ -19,19 +19,21 @@ public class SatelliteImageController {
     @Autowired
     private SatelliteDataService satelliteDataService;
     
-    // Endpoint de test pentru a verifica dacă controller-ul este detectat
+    /**
+     * Test endpoint to verify controller is detected.
+     */
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("SatelliteImageController is working!");
     }
 
     /**
-     * Generează o imagine NDVI pentru o locație
-     * @param lat Latitudine
-     * @param lon Longitudine
-     * @param width Lățimea imaginii (default: 512)
-     * @param height Înălțimea imaginii (default: 512)
-     * @return Imagine PNG cu hartă NDVI colorată
+     * Generates an NDVI image for a location.
+     * @param lat Latitude
+     * @param lon Longitude
+     * @param width Image width (default: 512)
+     * @param height Image height (default: 512)
+     * @return PNG image with colored NDVI map
      */
     @GetMapping("/image/ndvi")
     public ResponseEntity<byte[]> getNDVIImage(
@@ -44,7 +46,7 @@ public class SatelliteImageController {
         System.out.println("Lat: " + lat + ", Lon: " + lon + ", Width: " + width + ", Height: " + height);
         
         try {
-            // Folosește Sentinel Hub Process API pentru a genera o imagine NDVI
+            // Use Sentinel Hub Process API to generate NDVI image
             byte[] imageData = satelliteDataService.generateNDVIImage(lat, lon, width, height)
                     .block(java.time.Duration.ofSeconds(30));
             

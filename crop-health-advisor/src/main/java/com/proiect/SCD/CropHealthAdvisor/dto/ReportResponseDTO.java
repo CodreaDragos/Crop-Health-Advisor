@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * DTO pentru răspunsul raportului care include toate metricile satelitare
- * Permite afișarea tuturor datelor fără a modifica modelul Reports
+ * DTO for report response that includes all satellite metrics.
+ * Allows displaying all data without modifying the Reports model.
  */
 @Data
 @NoArgsConstructor
@@ -26,10 +26,10 @@ public class ReportResponseDTO {
     private Double evapotranspiration;
     private String aiInterpretation;
     private LocalDateTime reportDate;
-    private Object location; // Serializează location-ul complet
+    private Object location;
     
     /**
-     * Creează un DTO din Reports și SatelliteMetricsDTO
+     * Creates a DTO from Reports and SatelliteMetricsDTO.
      */
     public static ReportResponseDTO from(Reports report, SatelliteMetricsDTO metrics) {
         ReportResponseDTO dto = new ReportResponseDTO();

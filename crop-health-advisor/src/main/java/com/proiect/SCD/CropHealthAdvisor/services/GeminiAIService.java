@@ -12,9 +12,12 @@ public class GeminiAIService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
+    /**
+     * Generates AI interpretation for crop health analysis.
+     * Currently uses mock response for testing. In production, use real Gemini API.
+     */
     public Mono<String> getInterpretation(String prompt) {
-        // Mock response pentru testare - in productie ar trebui sa folosesti API-ul real Gemini
-        // Extrage metricele din prompt pentru un răspuns mai realist
+        // Extract metrics from prompt for more realistic response
         double ndvi = extractNDVI(prompt);
         double temp = extractTemperature(prompt);
         double precip = extractPrecipitation(prompt);

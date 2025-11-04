@@ -28,38 +28,38 @@ public class ReportController {
         return ResponseEntity.ok("Test endpoint working! Lat: " + lat + ", Lon: " + lon);
     }
 
+    /**
+     * Generates and saves a new crop health report for a location.
+     * Fetches real-time satellite data and generates AI interpretation.
+     */
     @GetMapping
     public ResponseEntity<Reports> getFieldData(@Valid @RequestParam Long locationId) {
         try {
-            // Converteste Mono la blocking call pentru compatibilitate cu Spring Security
-            // Adaugam timeout pentru a preveni blocarea indefinita
             Reports report = reportService.generateAndSaveReport(locationId)
-                    .block(java.time.Duration.ofSeconds(60)); // Mărit timeout-ul pentru Sentinel Hub API
+                    .block(java.time.Duration.ofSeconds(60));
             
             if (report != null) {
-                // Asigură-te că locația este încărcată (EAGER fetch)
-                // și că este inclusă în răspuns (JSON serialization)
                 return ResponseEntity.ok(report);
             } else {
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            // Log pentru debugging
             e.printStackTrace();
             System.err.println("Error generating report for location " + locationId + ": " + e.getMessage());
-            
-            // Daca apare o eroare (ex: locatia nu exista), returneaza 400 sau 500
             String errorMessage = e.getMessage();
             if (e.getCause() != null) {
                 errorMessage = e.getCause().getMessage();
             }
-            if (errorMessage != null && errorMessage.contains("găsită")) {
+            if (errorMessage != null && errorMessage.contains("not found")) {
                 return ResponseEntity.badRequest().build();
             }
             return ResponseEntity.status(500).build();
         }
     }
-    // NOU: READ (Citeste istoricul rapoartelor pentru o locatie)
+
+    /**
+     * Retrieves report history for a specific location.
+     */
     @GetMapping("/location/{locationId}")
     public ResponseEntity<List<Reports>> getReportsForLocation(@PathVariable Long locationId) {
         List<Reports> reports = reportService.getReportsByLocationId(locationId);
@@ -69,7 +69,49 @@ public class ReportController {
         return ResponseEntity.ok(reports);
     }
     
-    // DELETE (Sterge un raport)
+    /**
+     * Retrieves all reports (for admin purposes).
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<Reports>> getAllReports() {
+        List<Reports> reports = reportService.findAll();
+        return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * Retrieves a single report by ID.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Reports> getReportById(@PathVariable Long id) {
+        return reportService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Creates a new report.
+     */
+    @PostMapping
+    public ResponseEntity<Reports> createReport(@Valid @RequestBody Reports report) {
+        Reports savedReport = reportService.save(report);
+        return new ResponseEntity<>(savedReport, org.springframework.http.HttpStatus.CREATED);
+    }
+
+    /**
+     * Updates an existing report.
+     */
+    @PutMapping
+    public ResponseEntity<Reports> updateReport(@Valid @RequestBody Reports report) {
+        if (reportService.findById(report.getId()).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Reports updatedReport = reportService.save(report);
+        return ResponseEntity.ok(updatedReport);
+    }
+
+    /**
+     * Deletes a report by ID.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
         if (reportService.deleteById(id)) {

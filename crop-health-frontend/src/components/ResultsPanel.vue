@@ -290,9 +290,9 @@ const onMapReady = () => {
   console.log('NDVI Map ready');
 };
 
-// Încarcă imaginea NDVI dacă există date de locație
+// Load NDVI image if location data exists
 onMounted(async () => {
-  // Verifică dacă există date de locație în raport
+  // Check if location data exists in report
   const location = props.reportData.location;
   const lat = location?.latitude || props.reportData.latitude;
   const lon = location?.longitude || props.reportData.longitude;

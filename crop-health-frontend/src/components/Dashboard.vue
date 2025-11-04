@@ -56,6 +56,7 @@
                    @location-selected="selectedLocationId = $event"
                    @view-full-report="handleViewFullReport"
                    @report-deleted="handleReportDeleted"
+                   @refresh="handleHistoryRefresh"
                  />
         </div>
         
@@ -134,13 +135,10 @@ const handleNavClick = (view) => {
   currentView.value = view;
 };
 
-// Watch pentru a reinițializa harta când revenim la dashboard
-// Nu mai încercăm să reatașăm listener-ul manual - onMapReady se ocupă de asta automat
+// Watch to reinitialize map when returning to dashboard
 watch(currentView, (newView, oldView) => {
   if (newView === 'dashboard' && oldView !== 'dashboard') {
     console.log('Navigating to dashboard - map will be reinitialized automatically');
-    // Componenta MapComponent va fi remontată (datorită v-if)
-    // și onMapReady va fi apelat automat, atașând listener-ul
   }
 });
 
@@ -161,7 +159,6 @@ const handleMapClick = ({ lat, lon }) => {
   markerPlaced.value = true;
   selectedLocation.value.lat = lat;
   selectedLocation.value.lon = lon;
-  // Nu mai deschidem automat formularul - așteptăm click pe buton
 };
 
 const saveLocation = async () => {
@@ -195,7 +192,6 @@ const saveLocation = async () => {
     
     alert(`Locația "${response.data.name}" a fost salvată cu succes!`);
     
-    // NU generăm raport automat - utilizatorul va genera manual din "Locații Salvate"
   } catch (error) {
     console.error("Eroare la salvarea locației:", error);
     if (error.response && error.response.status === 401) {
@@ -253,17 +249,23 @@ const handleLocationSelect = (location) => {
 };
 
 const handleLocationDeleted = async (locationId) => {
-    // Reîncarcă locațiile și rapoartele după ștergere
+    // Reload locations and reports after deletion
     await loadSavedLocations();
     await loadLocationReports();
-    // Dacă locația ștearsă era selectată în history, resetează selecția
+    // If deleted location was selected in history, reset selection
     if (selectedLocationId.value === locationId) {
       selectedLocationId.value = null;
     }
   };
 
 const handleReportDeleted = async (reportId) => {
-  // Reîncarcă rapoartele pentru locațiile curente
+  // Reload reports for current locations
+  await loadLocationReports();
+};
+
+const handleHistoryRefresh = async () => {
+  // Reload locations and reports when refresh is pressed in HistoryPanel
+  await loadSavedLocations();
   await loadLocationReports();
 };
 

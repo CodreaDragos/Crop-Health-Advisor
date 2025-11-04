@@ -1,4 +1,4 @@
-// JwtAuthResponse.java (Răspunsul cu Token-ul)
+// JwtAuthResponse.java (Response with Token)
 package com.proiect.SCD.CropHealthAdvisor.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;

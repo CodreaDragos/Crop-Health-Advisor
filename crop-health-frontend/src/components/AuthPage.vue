@@ -104,7 +104,7 @@ const handleSubmit = async () => {
         }
     } catch (err) {
         isError.value = true;
-        // Gestionează atât Error objects cât și string-uri
+        // Handle both Error objects and strings
         message.value = err instanceof Error ? err.message : (err || 'A apărut o eroare necunoscută.');
         console.error('Auth error:', err);
     } finally {

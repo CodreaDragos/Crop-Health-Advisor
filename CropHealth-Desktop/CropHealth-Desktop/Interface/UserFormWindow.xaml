@@ -1,0 +1,59 @@
+<Window x:Class="CropHealth_Desktop.Interface.UserFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CropHealth_Desktop.Interface"
+        mc:Ignorable="d"
+        Title="Adaugă/Editează Utilizator" Height="450" Width="500"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock x:Name="TitleTextBlock" Grid.Row="0" 
+                   Text="Adaugă Utilizator Nou" 
+                   FontSize="20" FontWeight="Bold" 
+                   Margin="0,0,0,20"/>
+
+        <!-- Form -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <Label Content="Username:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBox x:Name="UsernameTextBox" Padding="8" Margin="0,0,0,15"/>
+
+            <Label Content="Email:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBox x:Name="EmailTextBox" Padding="8" Margin="0,0,0,15"/>
+
+            <Label Content="Parolă:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <PasswordBox x:Name="PasswordBox" Padding="8" Margin="0,0,0,15"/>
+
+            <Label Content="Rol:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <ComboBox x:Name="RoleComboBox" Padding="8" Margin="0,0,0,15">
+                <ComboBoxItem Content="USER" Tag="USER"/>
+                <ComboBoxItem Content="ADMIN" Tag="ADMIN"/>
+            </ComboBox>
+
+            <TextBlock x:Name="ErrorTextBlock" 
+                      Foreground="Red" 
+                      TextWrapping="Wrap"
+                      Margin="0,10,0,0"
+                      Visibility="Collapsed"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                   HorizontalAlignment="Right">
+            <Button Content="Salvează" Click="SaveButton_Click" 
+                    Padding="15,8" Margin="0,0,10,0"
+                    Background="#667eea" Foreground="White" 
+                    FontWeight="Bold" MinWidth="100"/>
+            <Button Content="Anulează" Click="CancelButton_Click" 
+                    Padding="15,8" MinWidth="100"/>
+        </StackPanel>
+    </Grid>
+</Window>
+

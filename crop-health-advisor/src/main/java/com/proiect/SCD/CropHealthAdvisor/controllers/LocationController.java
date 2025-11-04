@@ -18,22 +18,37 @@ public class LocationController {
     @Autowired
     private LocationService locationService;
 
-    // CREATE (Adauga o noua locatie)
-    // Se asteapta ca obiectul Location sa contina si un User in interior (sau un user_id valid)
+    /**
+     * Creates a new location.
+     * Location object must contain a valid User reference or user_id.
+     */
     @PostMapping
     public ResponseEntity<Location> createLocation(@Valid @RequestBody Location location) {
         Location savedLocation = locationService.save(location);
         return new ResponseEntity<>(savedLocation, HttpStatus.CREATED);
     }
 
-    // READ (Toate locatiile unui utilizator. Presupunem ca avem id-ul user-ului)
+    /**
+     * Retrieves all locations (for admin purposes).
+     */
+    @GetMapping
+    public ResponseEntity<List<Location>> getAllLocations() {
+        List<Location> locations = locationService.findAll();
+        return ResponseEntity.ok(locations);
+    }
+
+    /**
+     * Retrieves all locations for a specific user.
+     */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Location>> getLocationsByUserId(@PathVariable Long userId) {
         List<Location> locations = locationService.findByUserId(userId);
         return ResponseEntity.ok(locations);
     }
 
-    // READ (O singura locatie)
+    /**
+     * Retrieves a single location by ID.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Location> getLocationById(@PathVariable Long id) {
         return locationService.findById(id)
@@ -41,7 +56,9 @@ public class LocationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // UPDATE
+    /**
+     * Updates an existing location.
+     */
     @PutMapping
     public ResponseEntity<Location> updateLocation(@Valid @RequestBody Location locationDetails) {
         if (locationService.findById(locationDetails.getId()).isEmpty()) {
@@ -51,7 +68,9 @@ public class LocationController {
         return ResponseEntity.ok(updatedLocation);
     }
 
-    // DELETE
+    /**
+     * Deletes a location by ID.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLocation(@PathVariable Long id) {
         if (locationService.deleteById(id)) {

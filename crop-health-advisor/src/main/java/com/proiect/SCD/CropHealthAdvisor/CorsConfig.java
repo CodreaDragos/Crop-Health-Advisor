@@ -9,11 +9,11 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // Aplica regulile CORS pe toate endpoint-urile /api
-                .allowedOrigins("http://localhost:5173", "http://localhost:5174") // Permite ambele porturi comune pentru Vite
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Include OPTIONS pentru preflight
+        registry.addMapping("/api/**")
+                .allowedOriginPatterns("*") // Allows all origins including null for desktop applications
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true)
-                .maxAge(3600); // Cache preflight requests pentru 1 oră
+                .allowCredentials(false) // Set to false to allow null origin for desktop applications
+                .maxAge(3600); // Cache preflight requests for 1 hour
     }
 }

@@ -27,15 +27,15 @@ public class SatelliteDataService {
     private String sentinelHubApiKey;
 
     @Value("${sentinelhub.client.secret:}")
-    private String sentinelHubClientSecret; // Opțional - pentru OAuth2
+    private String sentinelHubClientSecret; // Optional - for OAuth2
     
     @Autowired(required = false)
-    private WeatherService weatherService; // Opțional - pentru date meteorologice reale
+    private WeatherService weatherService; // Optional - for real weather data
     
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     
-    // Cache pentru access token
+    // Cache for access token
     private String cachedAccessToken = null;
     private long tokenExpiryTime = 0;
     
@@ -48,21 +48,21 @@ public class SatelliteDataService {
     }
     
     /**
-     * Obține un access token OAuth2 de la Sentinel Hub
-     * NOTĂ: Dacă nu ai Client Secret, folosește direct cheia API (legacy mode)
+     * Gets an OAuth2 access token from Sentinel Hub.
+     * NOTE: If no Client Secret, use API key directly (legacy mode).
      */
     private Mono<String> getAccessToken() {
-        // Dacă nu avem Client Secret, folosim direct cheia API (pentru legacy/statistical API)
+        // If no Client Secret, use API key directly (for legacy/statistical API)
         if (sentinelHubClientSecret == null || sentinelHubClientSecret.isEmpty()) {
             return Mono.just(sentinelHubApiKey);
         }
         
-        // Dacă avem token cache valid, folosim-l
+        // If we have valid cached token, use it
         if (cachedAccessToken != null && System.currentTimeMillis() < tokenExpiryTime) {
             return Mono.just(cachedAccessToken);
         }
         
-        // Obține token nou prin OAuth2 client credentials
+        // Get new token via OAuth2 client credentials
         return webClient.post()
                 .uri("/oauth/token")
                 .header("Content-Type", "application/x-www-form-urlencoded")
@@ -73,35 +73,35 @@ public class SatelliteDataService {
                     String accessToken = (String) response.get("access_token");
                     Integer expiresIn = (Integer) response.get("expires_in");
                     cachedAccessToken = accessToken;
-                    tokenExpiryTime = System.currentTimeMillis() + (expiresIn * 1000) - 60000; // Expiră cu 1 min înainte
+                    tokenExpiryTime = System.currentTimeMillis() + (expiresIn * 1000) - 60000; // Expires 1 min before
                     return accessToken;
                 })
                 .onErrorResume(error -> {
                     System.err.println("Error getting OAuth token: " + error.getMessage());
-                    // Fallback la cheia API directă
+                    // Fallback to direct API key
                     return Mono.just(sentinelHubApiKey);
                 });
     }
 
     /**
-     * Obține metricile satelitare pentru o locație (NDVI, EVI, NDWI, temperatura LST)
-     * Folosește Sentinel Hub Statistical API pentru indici și MODIS pentru temperatură
+     * Retrieves satellite metrics for a location (NDVI, EVI, NDWI, LST temperature).
+     * Uses Sentinel Hub Statistical API for indices and MODIS for temperature.
      */
     public Mono<SatelliteMetricsDTO> getSatelliteMetrics(double lat, double lon) {
-        // Definește o zonă mică în jurul coordonatelor (buffer de ~100m)
+        // Define small area around coordinates (buffer ~100m)
         double buffer = 0.001; // ~100m
         double minLon = lon - buffer;
         double minLat = lat - buffer;
         double maxLon = lon + buffer;
         double maxLat = lat + buffer;
         
-        // Interval de timp: ultimele 30 de zile
+        // Time interval: last 30 days
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(30);
         String timeFrom = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T00:00:00Z";
         String timeTo = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T23:59:59Z";
         
-        // Eval script pentru NDVI, EVI, NDWI din Sentinel-2
+        // Eval script for NDVI, EVI, NDWI from Sentinel-2
         String evalscript = 
             "//VERSION=3\n" +
             "function setup() {\n" +
@@ -179,7 +179,7 @@ public class SatelliteDataService {
         try {
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
             
-            // Obține NDVI/EVI/NDWI din Sentinel-2
+            // Get NDVI/EVI/NDWI from Sentinel-2
             Mono<SatelliteMetricsDTO> satelliteMetricsMono = getAccessToken()
                     .flatMap(accessToken -> {
                         return webClient.post()
@@ -194,33 +194,32 @@ public class SatelliteDataService {
                         return parseStatisticalResponse(responseJson, lat, lon);
                     });
             
-            // Obține temperatura LST (Land Surface Temperature) din MODIS
+            // Get LST temperature (Land Surface Temperature) from MODIS
             Mono<Double> lstTemperatureMono = getLandSurfaceTemperature(lat, lon);
             
-            // Combină ambele: NDVI/EVI/NDWI + LST + Weather data
+            // Combine both: NDVI/EVI/NDWI + LST + Weather data
             return Mono.zip(satelliteMetricsMono, lstTemperatureMono)
                     .flatMap(tuple -> {
                         SatelliteMetricsDTO metrics = tuple.getT1();
                         Double lstTemp = tuple.getT2();
                         
-                        // Folosește LST direct (temperatura suprafeței solului)
+                        // Use LST directly (soil surface temperature)
                         if (lstTemp != null && lstTemp > -50 && lstTemp < 60) {
-                            // LST este temperatura suprafeței solului - folosim direct
                             metrics.setTemperature(lstTemp);
                             
-                            // Calculează metrici suplimentare bazate pe datele disponibile din sateliți
+                            // Calculate additional metrics based on available satellite data
                             calculateAdditionalMetricsFromSatellite(metrics);
                         } else if (weatherService != null) {
-                            // Dacă LST nu este disponibil, folosește WeatherService
+                            // If LST not available, use WeatherService
                             return weatherService.getWeatherData(lat, lon)
                                     .map(weatherData -> {
-                                        // Folosește temperatura din weather API ca fallback, dar preferăm LST
+                                        // Use temperature from weather API as fallback, but prefer LST
                                         if (metrics.getTemperature() == 0.0) {
                                             metrics.setTemperature(weatherData.get("temperature"));
                                         }
-                                        // Precipitațiile din weather API au prioritate peste estimările satelitare
+                                        // Precipitation from weather API has priority over satellite estimates
                                         metrics.setPrecipitation(weatherData.get("precipitation"));
-                                        // Calculează metrici suplimentare
+                                        // Calculate additional metrics
                                         calculateAdditionalMetricsFromSatellite(metrics);
                                         return metrics;
                                     })
@@ -231,15 +230,15 @@ public class SatelliteDataService {
                                         return Mono.just(metrics);
                                     });
                         } else {
-                            // Fallback: calculează metrici din datele disponibile, sau mock dacă nu avem nimic
+                            // Fallback: calculate metrics from available data, or mock if nothing available
                             if (metrics.getTemperature() == 0.0) {
                                 metrics.setTemperature(getTemperatureFromWeatherAPI(lat, lon));
                             }
-                            // Calculează metrici suplimentare din datele disponibile
+                            // Calculate additional metrics from available data
                             calculateAdditionalMetricsFromSatellite(metrics);
                         }
                         
-                        // Asigură-te că toate metricile sunt calculate
+                        // Ensure all metrics are calculated
                         if (metrics.getPrecipitation() == 0.0 && metrics.getSoilMoisture() == 0.0) {
                             calculateAdditionalMetricsFromSatellite(metrics);
                         }
@@ -257,8 +256,8 @@ public class SatelliteDataService {
     }
     
     /**
-     * Obține Land Surface Temperature (LST) din MODIS Terra/Aqua
-     * MODIS oferă date termale pentru temperatura suprafeței solului
+     * Retrieves Land Surface Temperature (LST) from MODIS Terra/Aqua.
+     * MODIS provides thermal data for soil surface temperature.
      */
     private Mono<Double> getLandSurfaceTemperature(double lat, double lon) {
         double buffer = 0.001;
@@ -268,11 +267,11 @@ public class SatelliteDataService {
         double maxLat = lat + buffer;
         
         LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(7); // MODIS are rezoluție zilnică, folosim ultimele 7 zile
+        LocalDate startDate = endDate.minusDays(7); // MODIS has daily resolution, use last 7 days
         String timeFrom = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T00:00:00Z";
         String timeTo = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T23:59:59Z";
         
-        // Eval script pentru LST din MODIS
+        // Eval script for LST from MODIS
         String lstScript = 
             "//VERSION=3\n" +
             "function setup() {\n" +
@@ -287,8 +286,8 @@ public class SatelliteDataService {
             "  };\n" +
             "}\n" +
             "function evaluatePixel(samples) {\n" +
-            "  // LST este în Kelvin, convertim la Celsius\n" +
-            "  var lstKelvin = samples.LST * 0.02 - 273.15; // Scale factor 0.02 pentru MODIS\n" +
+            "  // LST is in Kelvin, convert to Celsius\n" +
+            "  var lstKelvin = samples.LST * 0.02 - 273.15; // Scale factor 0.02 for MODIS\n" +
             "  return {\n" +
             "    lst: [lstKelvin]\n" +
             "  };\n" +
@@ -347,7 +346,7 @@ public class SatelliteDataService {
                 .bodyToMono(String.class);
                     })
                     .map(responseJson -> {
-                        // Parsează răspunsul pentru LST
+                        // Parse response for LST
                         SatelliteDataDTO data;
                         try {
                             data = objectMapper.readValue(responseJson, SatelliteDataDTO.class);
@@ -369,7 +368,7 @@ public class SatelliteDataService {
                     })
                     .onErrorResume(error -> {
                         System.err.println("Error fetching LST from MODIS: " + error.getMessage());
-                        return Mono.just((Double) null); // Returnează null dacă nu poate obține LST
+                        return Mono.just((Double) null); // Return null if cannot get LST
                     });
         } catch (Exception e) {
             System.err.println("Error building LST request: " + e.getMessage());
@@ -385,7 +384,7 @@ public class SatelliteDataService {
             SatelliteDataDTO data = objectMapper.readValue(response, SatelliteDataDTO.class);
             
             if (data.getData() != null && !data.getData().isEmpty()) {
-                // Ia ultimele date disponibile (cea mai recentă)
+                // Get latest available data (most recent)
                 SatelliteDataDTO.TimeSeriesData latestData = data.getData().get(data.getData().size() - 1);
                 
                 if (latestData.getOutputs() != null) {
@@ -415,8 +414,7 @@ public class SatelliteDataService {
                         }
                     }
                     
-                    // Temperatura și precipitațiile vor fi setate mai târziu în flatMap
-                    // Momentan le lăsăm null, vor fi completate după
+                    // Temperature and precipitation will be set later in flatMap
                     
                     return metrics;
                 }
@@ -425,56 +423,56 @@ public class SatelliteDataService {
             System.err.println("Error parsing satellite data response: " + e.getMessage());
         }
         
-        // Fallback la mock dacă parsing-ul eșuează
+        // Fallback to mock if parsing fails
         return createMockMetrics(lat, lon);
     }
     
     /**
-     * Calculează metrici suplimentare relevante din datele satelitare disponibile
-     * Toate metricile sunt calculate din NDVI, EVI, NDWI, și LST (nu sunt estimate random)
+     * Calculates additional relevant metrics from available satellite data.
+     * All metrics are calculated from NDVI, EVI, NDWI, and LST (not randomly estimated).
      */
     private void calculateAdditionalMetricsFromSatellite(SatelliteMetricsDTO metrics) {
         double ndvi = metrics.getNdvi();
         double evi = metrics.getEvi();
         double ndwi = metrics.getNdwi();
-        double lst = metrics.getTemperature(); // LST = temperatura solului
+        double lst = metrics.getTemperature(); // LST = soil temperature
         
-        // 1. Soil Moisture Index (SMI) - derivat din NDWI
-        // NDWI corelează cu umiditatea: valori pozitive = mai multă apă
-        // Normalizăm NDWI (-1 to 1) la un index de 0-100%
-        double soilMoisture = ((ndwi + 1.0) / 2.0) * 100.0; // Convertim -1..1 la 0..100%
+        // 1. Soil Moisture Index (SMI) - derived from NDWI
+        // NDWI correlates with moisture: positive values = more water
+        // Normalize NDWI (-1 to 1) to 0-100% index
+        double soilMoisture = ((ndwi + 1.0) / 2.0) * 100.0; // Convert -1..1 to 0..100%
         metrics.setSoilMoisture(soilMoisture);
         
-        // 2. Evapotranspiration (ET) - estimat din NDVI și LST
-        // Formula simplificată: ET ∝ NDVI * LST (mai multă vegetație + temperatură mai mare = mai multă ET)
-        // Normalizăm pentru a obține mm/zi rezonabil (0-10mm/zi)
+        // 2. Evapotranspiration (ET) - estimated from NDVI and LST
+        // Simplified formula: ET ∝ NDVI * LST (more vegetation + higher temperature = more ET)
+        // Normalize to get reasonable mm/day (0-10mm/day)
         double evapotranspiration = Math.max(0, Math.min(10, ndvi * 5.0 + (lst > 20 ? (lst - 20) * 0.2 : 0)));
         metrics.setEvapotranspiration(evapotranspiration);
         
-        // 3. Cloud Cover - estimat din diferența dintre NDVI și EVI
-        // EVI este mai robust la nori, diferența mare indică acoperire de nori
-        // Normalizăm la procent (0-100%)
+        // 3. Cloud Cover - estimated from difference between NDVI and EVI
+        // EVI is more robust to clouds, large difference indicates cloud cover
+        // Normalize to percentage (0-100%)
         double ndviEviDiff = Math.abs(ndvi - evi);
-        double cloudCover = Math.min(100, ndviEviDiff * 150.0); // Ajustare pentru a obține procente reale
+        double cloudCover = Math.min(100, ndviEviDiff * 150.0); // Adjustment to get real percentages
         metrics.setCloudCover(cloudCover);
         
-        // 4. Precipitații estimate - derivat din NDWI și schimbări în NDVI
-        // NDWI ridicat + scădere NDVI recentă = precipitații recente
-        // Formula simplificată bazată pe corelația dintre NDWI și precipitații
-        double estimatedPrecipitation = Math.max(0, (ndwi + 0.5) * 30.0); // Estimare mm pe baza NDWI
+        // 4. Estimated precipitation - derived from NDWI and NDVI changes
+        // High NDWI + recent NDVI decrease = recent precipitation
+        // Simplified formula based on correlation between NDWI and precipitation
+        double estimatedPrecipitation = Math.max(0, (ndwi + 0.5) * 30.0); // Estimate mm based on NDWI
         metrics.setPrecipitation(estimatedPrecipitation);
     }
     
     /**
-     * Obține temperatura de la un API meteorologic (fallback)
+     * Gets temperature from weather API (fallback).
      */
     private double getTemperatureFromWeatherAPI(double lat, double lon) {
-        // Mock pentru fallback
+        // Mock for fallback
         return Math.random() * 30.0 + 5.0; // 5-35°C
     }
     
     /**
-     * Obține precipitațiile de la un API meteorologic (fallback)
+     * Gets precipitation from weather API (fallback).
      */
     private double getPrecipitationFromWeatherAPI(double lat, double lon) {
         // Mock pentru fallback
@@ -492,7 +490,7 @@ public class SatelliteDataService {
             Math.random() * 30.0 + 5.0, // Temperature: 5-35°C (LST)
             Math.random() * 80.0 // Precipitation: 0-80mm (estimat)
         );
-        // Calculează metrici suplimentare din valorile mock
+        // Calculate additional metrics from mock values
         calculateAdditionalMetricsFromSatellite(metrics);
         return metrics;
     }
@@ -509,7 +507,7 @@ public class SatelliteDataService {
         double maxLon = lon + buffer;
         double maxLat = lat + buffer;
         
-        // Eval script pentru generarea unei imagini NDVI colorate
+        // Eval script for generating colored NDVI image
         String evalscript = 
             "//VERSION=3\n" +
             "function setup() {\n" +
@@ -529,22 +527,22 @@ public class SatelliteDataService {
             "  var nir = samples.B08 / 10000;\n" +
             "  var ndvi = (nir - red) / (nir + red);\n" +
             "  \n" +
-            "  // Colorează NDVI: roșu pentru valori negative/scăzute, verde pentru valori pozitive/ridicate\n" +
+            "  // Color NDVI: red for negative/low values, green for positive/high values\n" +
             "  var r, g, b;\n" +
             "  if (ndvi < 0) {\n" +
-            "    r = 255; g = 0; b = 0; // Roșu pentru apă/sol gol\n" +
+            "    r = 255; g = 0; b = 0; // Red for water/bare soil\n" +
             "  } else if (ndvi < 0.2) {\n" +
-            "    r = 255; g = 165; b = 0; // Portocaliu pentru vegetație foarte slabă\n" +
+            "    r = 255; g = 165; b = 0; // Orange for very weak vegetation\n" +
             "  } else if (ndvi < 0.5) {\n" +
-            "    r = 255; g = 255; b = 0; // Galben pentru vegetație moderată\n" +
+            "    r = 255; g = 255; b = 0; // Yellow for moderate vegetation\n" +
             "  } else {\n" +
-            "    r = 0; g = 255; b = 0; // Verde pentru vegetație sănătoasă\n" +
+            "    r = 0; g = 255; b = 0; // Green for healthy vegetation\n" +
             "  }\n" +
             "  \n" +
             "  return [r, g, b];\n" +
             "}";
         
-        // Construiește request body pentru Process API
+        // Build request body for Process API
         Map<String, Object> requestBody = new HashMap<>();
         
         // Input
@@ -577,7 +575,7 @@ public class SatelliteDataService {
         try {
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
             
-            // Obține access token (OAuth2 sau direct API key)
+            // Get access token (OAuth2 or direct API key)
             return getAccessToken()
                     .flatMap(accessToken -> {
                         return webClient.post()
@@ -591,7 +589,7 @@ public class SatelliteDataService {
                     .onErrorResume(error -> {
                         System.err.println("Error generating NDVI image: " + error.getMessage());
                         System.err.println("NOTE: Sentinel Hub API returned error. Generating mock NDVI image.");
-                        // Generează o imagine mock NDVI pentru demo
+                        // Generate mock NDVI image for demo
                         return Mono.just(generateMockNDVIImage(width, height));
                     });
         } catch (Exception e) {
@@ -608,28 +606,28 @@ public class SatelliteDataService {
             BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2d = image.createGraphics();
             
-            // Creează un gradient NDVI: roșu -> portocaliu -> galben -> verde
+            // Create NDVI gradient: red -> orange -> yellow -> green
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    // Simulează o distribuție NDVI (centru = mai verde, margini = mai roșu)
+                    // Simulate NDVI distribution (center = greener, edges = redder)
                     double centerX = width / 2.0;
                     double centerY = height / 2.0;
                     double distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
                     double maxDistance = Math.sqrt(Math.pow(width/2.0, 2) + Math.pow(height/2.0, 2));
                     double normalizedDistance = distance / maxDistance;
                     
-                    // NDVI simulat: -0.5 (roșu) la margini, 0.8 (verde) în centru
+                    // Simulated NDVI: -0.5 (red) at edges, 0.8 (green) at center
                     double ndvi = 0.8 - (normalizedDistance * 1.3);
                     
                     Color color;
                     if (ndvi < 0) {
-                        color = new Color(255, 0, 0); // Roșu - apă/sol gol
+                        color = new Color(255, 0, 0); // Red - water/bare soil
                     } else if (ndvi < 0.2) {
-                        color = new Color(255, 165, 0); // Portocaliu - vegetație slabă
+                        color = new Color(255, 165, 0); // Orange - weak vegetation
                     } else if (ndvi < 0.5) {
-                        color = new Color(255, 255, 0); // Galben - vegetație moderată
+                        color = new Color(255, 255, 0); // Yellow - moderate vegetation
                     } else {
-                        color = new Color(0, 255, 0); // Verde - vegetație sănătoasă
+                        color = new Color(0, 255, 0); // Green - healthy vegetation
                     }
                     
                     image.setRGB(x, y, color.getRGB());
@@ -638,7 +636,7 @@ public class SatelliteDataService {
             
             g2d.dispose();
             
-            // Convertește BufferedImage la byte array PNG
+            // Convert BufferedImage to PNG byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(image, "png", baos);
             return baos.toByteArray();

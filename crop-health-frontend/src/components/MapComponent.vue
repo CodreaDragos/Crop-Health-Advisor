@@ -53,15 +53,13 @@ import { ref, onMounted, nextTick, watch, onActivated } from "vue";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import "leaflet/dist/leaflet.css";
 
-// IMPORTEAZĂ IMAGINILE NECESARE
+// Import Leaflet images
 import { Icon } from "leaflet";
-
-// Reimportă căile implicite ale imaginilor Leaflet
 import markerIconUrl from "leaflet/dist/images/marker-icon.png";
 import markerIconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadowUrl from "leaflet/dist/images/marker-shadow.png";
 
-// CORECTEAZĂ CĂILE IMPLICITE ALE LEAFLET
+// Fix Leaflet default icon paths
 delete Icon.Default.prototype._getIconUrl;
 Icon.Default.mergeOptions({
   iconRetinaUrl: markerIconRetinaUrl,
@@ -103,9 +101,8 @@ const updateLayer = () => {
   // Layer update is handled by v-if on LTileLayer components
 };
 
-// Metoda apelată la click pe hartă
+// Method called on map click
 const handleMapClick = (event) => {
-  // Primeste evenimentul Leaflet
   if (event && event.latlng) {
     const { lat, lng } = event.latlng;
     marker.value = [lat, lng];
@@ -113,10 +110,8 @@ const handleMapClick = (event) => {
   }
 };
 
-// Funcție pentru a atașa event listener-ul pe hartă
-// Folosim leafletMapInstance direct în loc de map.value.leafletObject
+// Function to attach event listener on map
 const attachClickListener = () => {
-  // Încearcă să folosească instanța Leaflet directă dacă este disponibilă
   const leafletMap = leafletMapInstance.value || (map.value && map.value.leafletObject);
   
   if (!leafletMap) {
@@ -124,24 +119,24 @@ const attachClickListener = () => {
     return false;
   }
   
-  // Verifică dacă harta este complet inițializată (are metode necesare)
+  // Check if map is fully initialized
   if (!leafletMap.on || typeof leafletMap.on !== 'function') {
     console.log('Cannot attach click listener: map not fully initialized');
     return false;
   }
   
-  // Verifică dacă listener-ul există deja
+  // Check if listener already exists
   if (leafletMap.listens && typeof leafletMap.listens === 'function' && leafletMap.listens('click')) {
     console.log('Click listener already attached');
     return true;
   }
   
-  // Elimină orice event listener existent pentru a evita duplicarea
+  // Remove any existing event listener to avoid duplication
   if (leafletMap.off && typeof leafletMap.off === 'function') {
     leafletMap.off('click');
   }
   
-  // Adaugă noul event listener
+  // Add new event listener
   try {
     leafletMap.on('click', (e) => {
       const { lat, lng } = e.latlng;
@@ -158,34 +153,34 @@ const attachClickListener = () => {
   }
 };
 
-// Expune metoda pentru a putea fi apelată din exterior
+// Expose method to be called from outside
 defineExpose({
   reattachClickListener: attachClickListener,
   map: map
 });
 
-// Flag pentru a știi când harta este complet inițializată
+// Flag to know when map is fully initialized
 const mapReady = ref(false);
-const leafletMapInstance = ref(null); // Stochează instanța Leaflet directă
+const leafletMapInstance = ref(null);
 
-// Callback când harta e gata
+// Callback when map is ready
 const onMapReady = (mapObject) => {
   console.log('onMapReady called', mapObject);
   map.value = mapObject;
   
-  // În Vue Leaflet, mapObject este wrapper-ul, iar mapObject.leafletObject este instanța Leaflet reală
-  // Dar uneori onMapReady poate primi direct instanța Leaflet
+  // In Vue Leaflet, mapObject is the wrapper, mapObject.leafletObject is the real Leaflet instance
+  // But sometimes onMapReady can receive the Leaflet instance directly
   if (mapObject && mapObject.leafletObject) {
     leafletMapInstance.value = mapObject.leafletObject;
     mapReady.value = true;
     
-    // Atașează event listener-ul direct pe instanța Leaflet
+    // Attach event listener directly on Leaflet instance
     setTimeout(() => {
       if (leafletMapInstance.value) {
-        // Elimină orice listener existent
+        // Remove any existing listener
         leafletMapInstance.value.off('click');
         
-        // Adaugă noul listener
+        // Add new listener
         leafletMapInstance.value.on('click', (e) => {
           const { lat, lng } = e.latlng;
           marker.value = [lat, lng];
@@ -193,7 +188,7 @@ const onMapReady = (mapObject) => {
           console.log('Map clicked at:', lat, lng);
         });
         
-        // Reinițializează dimensiunile
+        // Reinitialize dimensions
         if (leafletMapInstance.value.invalidateSize) {
           leafletMapInstance.value.invalidateSize();
         }
@@ -202,7 +197,7 @@ const onMapReady = (mapObject) => {
       }
     }, 200);
   } else if (mapObject && mapObject.on) {
-    // Dacă mapObject este direct instanța Leaflet (fără wrapper)
+    // If mapObject is directly the Leaflet instance (without wrapper)
     leafletMapInstance.value = mapObject;
     mapReady.value = true;
     
@@ -228,20 +223,18 @@ const onMapReady = (mapObject) => {
   }
 };
 
-// Initializează harta după ce componenta e montată
+// Initialize map after component is mounted
 onMounted(async () => {
   await nextTick();
   
-  // Nu mai încercăm să atașăm listener-ul aici - onMapReady se ocupă de asta
-  // Acest fallback poate cauza probleme, deci îl eliminăm
 });
 
-// Când componenta devine activă din nou (dacă folosim keep-alive)
+// When component becomes active again (if using keep-alive)
 onActivated(() => {
   console.log('MapComponent activated - reattaching click listener');
   nextTick(() => {
     setTimeout(() => {
-      // Folosește leafletMapInstance direct
+      // Use leafletMapInstance directly
       if (leafletMapInstance.value) {
         if (leafletMapInstance.value.invalidateSize) {
           leafletMapInstance.value.invalidateSize();
@@ -252,13 +245,13 @@ onActivated(() => {
   });
 });
 
-// Watch pentru a reinițializa listener-ul când componenta devine vizibilă
+// Watch to reinitialize listener when component becomes visible
 watch(() => props.savedLocations, () => {
-  // Când se actualizează locațiile salvate, asigură-te că listener-ul există
+  // When saved locations are updated, ensure listener exists
   nextTick(() => {
     setTimeout(() => {
       if (!attachClickListener()) {
-        // Retry dacă nu a reușit prima dată
+        // Retry if didn't succeed first time
         setTimeout(() => attachClickListener(), 300);
       }
     }, 100);
@@ -329,15 +322,15 @@ watch(() => props.savedLocations, () => {
   z-index: 0;
 }
 
-/* Asigură-te că Leaflet se afișează corect */
+/* Ensure Leaflet displays correctly */
 .map-wrapper :deep(.leaflet-container) {
   height: 100%;
   width: 100%;
   z-index: 0;
-  cursor: pointer; /* Indicează că harta e clickabilă */
+  cursor: pointer;
 }
 
-/* Asigură-te că interacțiunile Leaflet funcționează */
+/* Ensure Leaflet interactions work */
 .map-wrapper :deep(.leaflet-interactive) {
   cursor: pointer;
 }

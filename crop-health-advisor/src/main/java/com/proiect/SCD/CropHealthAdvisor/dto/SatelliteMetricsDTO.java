@@ -7,13 +7,13 @@ public class SatelliteMetricsDTO {
     private double ndvi;
     private double evi;
     private double ndwi;
-    private double temperature; // Land Surface Temperature (LST) - temperatura solului în °C
-    private double precipitation; // Precipitații estimate (mm) - derivate din indici satelitari
-    private double soilMoisture; // Umiditatea solului (index derivat din NDWI și altor indici)
-    private double cloudCover; // Acoperire nori (%) - estimat din metadata Sentinel-2
-    private double evapotranspiration; // Evapotranspirație estimată (mm/zi) - derivat din NDVI și LST
+    private double temperature; // Land Surface Temperature (LST) - soil temperature in °C
+    private double precipitation; // Estimated precipitation (mm) - derived from satellite indices
+    private double soilMoisture; // Soil moisture (index derived from NDWI and other indices)
+    private double cloudCover; // Cloud cover (%) - estimated from Sentinel-2 metadata
+    private double evapotranspiration; // Estimated evapotranspiration (mm/day) - derived from NDVI and LST
     
-    // Date spectrale brute (opțional, pentru analiză avansată)
+    // Raw spectral data (optional, for advanced analysis)
     private Double redReflectance;
     private Double nirReflectance;
     private Double swirReflectance;

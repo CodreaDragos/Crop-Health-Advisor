@@ -5,6 +5,29 @@
       <button @click="$emit('refresh')" class="refresh-btn">🔄 Reîncarcă</button>
     </div>
     
+    <!-- Search Bar -->
+    <div v-if="!loading && locations.length > 0" class="search-section">
+      <div class="search-container">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="🔍 Caută locații după nume..."
+          class="search-input"
+        />
+        <button 
+          v-if="searchQuery" 
+          @click="clearSearch" 
+          class="clear-search-btn"
+          title="Șterge căutarea"
+        >
+          ✕
+        </button>
+      </div>
+      <p v-if="filteredLocations.length !== locations.length" class="search-results-count">
+        {{ filteredLocations.length }} din {{ locations.length }} locații găsite
+      </p>
+    </div>
+    
     <div v-if="loading" class="loading">Se încarcă...</div>
     
     <div v-else-if="locations.length === 0" class="empty-state">
@@ -12,9 +35,14 @@
       <p class="hint">Mergeți la Harta și faceți click pentru a adăuga o locație.</p>
     </div>
     
+    <div v-else-if="filteredLocations.length === 0 && searchQuery" class="empty-state">
+      <p>Nu s-au găsit locații care să se potrivească cu "{{ searchQuery }}".</p>
+      <button @click="clearSearch" class="clear-search-action-btn">Șterge căutarea</button>
+    </div>
+    
     <div v-else class="locations-grid">
       <div 
-        v-for="location in locations" 
+        v-for="location in filteredLocations" 
         :key="location.id"
         class="location-card"
       >
@@ -93,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { deleteLocation } from '../services/locationService';
 
 const props = defineProps({
@@ -118,6 +146,22 @@ const props = defineProps({
 const emit = defineEmits(['location-selected', 'refresh', 'generate-report', 'view-full-report', 'view-all-reports', 'location-deleted']);
 
 const deletingLocationId = ref(null);
+const searchQuery = ref('');
+
+// Filter locations based on search query
+const filteredLocations = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return props.locations;
+  }
+  const query = searchQuery.value.toLowerCase().trim();
+  return props.locations.filter(location => 
+    location.name.toLowerCase().includes(query)
+  );
+});
+
+const clearSearch = () => {
+  searchQuery.value = '';
+};
 
 const handleDeleteLocation = async (location) => {
   // Confirmare de la utilizator
@@ -136,7 +180,7 @@ const handleDeleteLocation = async (location) => {
     await deleteLocation(location.id);
     emit('location-deleted', location.id);
     alert(`Locația "${location.name}" a fost ștearsă cu succes${reportCount > 0 ? ` (inclusiv ${reportCount} raport(e))` : ''}.`);
-    emit('refresh'); // Reîncarcă lista
+    emit('refresh');
   } catch (error) {
     console.error('Error deleting location:', error);
     alert('Eroare la ștergerea locației. Vă rugăm încercați din nou.');
@@ -157,7 +201,7 @@ const formatDate = (dateString) => {
   });
 };
 
-// Curăță textul AI de metadata JSON
+// Clean AI text from JSON metadata
 const cleanAIInterpretation = (interpretation) => {
   if (!interpretation) return '';
   
@@ -480,6 +524,82 @@ const cleanAIInterpretation = (interpretation) => {
 .delete-location-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.search-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1em;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  background: #c0c0c0;
+  color: #333;
+}
+
+.search-results-count {
+  margin: 8px 0 0 0;
+  color: #667eea;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.clear-search-action-btn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.clear-search-action-btn:hover {
+  background: #764ba2;
+  transform: translateY(-1px);
 }
 </style>
 

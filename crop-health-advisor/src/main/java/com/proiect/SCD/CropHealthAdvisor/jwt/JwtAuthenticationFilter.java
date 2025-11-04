@@ -28,23 +28,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
+            logger.info("JWT Filter - Request URI: " + request.getRequestURI() + ", Method: " + request.getMethod());
+            logger.info("JWT Filter - Authorization header: " + request.getHeader("Authorization"));
+            
             if (StringUtils.hasText(jwt)) {
+                logger.info("JWT Filter - Token found, length: " + jwt.length());
                 if (tokenProvider.validateToken(jwt)) {
+                    logger.info("JWT Filter - Token is valid");
                     String username = tokenProvider.getUsernameFromJWT(jwt);
+                    logger.info("JWT Filter - Username from token: " + username);
 
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.info("JWT Filter - Authentication set successfully");
                 } else {
-                    logger.warn("JWT token is invalid or expired for request: " + request.getRequestURI());
+                    logger.warn("JWT Filter - JWT token is invalid or expired for request: " + request.getRequestURI());
                 }
             } else {
-                logger.debug("No JWT token found in request for: " + request.getRequestURI());
+                logger.warn("JWT Filter - No JWT token found in request for: " + request.getRequestURI() + ", Method: " + request.getMethod());
             }
         } catch (Exception ex) {
-            logger.error("Could not set user authentication in security context", ex);
+            logger.error("JWT Filter - Could not set user authentication in security context", ex);
         }
 
         filterChain.doFilter(request, response);

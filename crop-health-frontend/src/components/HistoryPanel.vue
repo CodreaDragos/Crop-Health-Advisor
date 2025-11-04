@@ -5,6 +5,7 @@
       <button v-if="selectedLocationId" @click="clearSelection" class="back-btn">
         ← Înapoi la Toate Locațiile
       </button>
+      <button @click="handleRefresh" class="refresh-btn">🔄 Reîncarcă</button>
     </div>
     
     <!-- Location Selector -->
@@ -32,11 +33,212 @@
     <div v-if="selectedLocationId && reports.length > 0" class="reports-list">
       <div class="location-info">
         <h3>{{ selectedLocationName }}</h3>
-        <p class="total-reports">{{ reports.length }} raport(e) total(e)</p>
+        <p class="total-reports">{{ filteredReports.length }} din {{ reports.length }} raport(e) afișate</p>
+      </div>
+      
+      <!-- Filter Panel -->
+      <div class="filter-panel">
+        <div class="filter-header">
+          <div class="filter-header-left">
+            <h4>🔍 Filtrează Rapoartele</h4>
+            <button @click="toggleFilters" class="toggle-filters-btn">
+              {{ filtersExpanded ? '▼ Ascunde' : '▶ Afișează Filtrele' }}
+            </button>
+          </div>
+          <button @click="resetFilters" class="reset-filters-btn">Resetează Filtrele</button>
+        </div>
+        
+        <div v-show="filtersExpanded" class="filters-grid">
+          <!-- NDVI Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              NDVI: {{ Math.min(filters.ndvi.min, filters.ndvi.max).toFixed(2) }} - {{ Math.max(filters.ndvi.min, filters.ndvi.max).toFixed(2) }}
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.ndvi.min.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.ndvi.min" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.ndvi.max.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.ndvi.max" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Temperature Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              Temperatură (°C): {{ Math.min(filters.temperature.min, filters.temperature.max) }}°C - {{ Math.max(filters.temperature.min, filters.temperature.max) }}°C
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.temperature.min }}°C</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.temperature.min" 
+                  min="-50" 
+                  max="60" 
+                  step="1"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.temperature.max }}°C</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.temperature.max" 
+                  min="-50" 
+                  max="60" 
+                  step="1"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Precipitation Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              Precipitații (mm): {{ Math.min(filters.precipitation.min, filters.precipitation.max).toFixed(1) }}mm - {{ Math.max(filters.precipitation.min, filters.precipitation.max).toFixed(1) }}mm
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.precipitation.min.toFixed(1) }}mm</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.precipitation.min" 
+                  min="0" 
+                  max="200" 
+                  step="0.1"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.precipitation.max.toFixed(1) }}mm</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.precipitation.max" 
+                  min="0" 
+                  max="200" 
+                  step="0.1"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- EVI Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              EVI: {{ Math.min(filters.evi.min, filters.evi.max).toFixed(2) }} - {{ Math.max(filters.evi.min, filters.evi.max).toFixed(2) }}
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.evi.min.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.evi.min" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.evi.max.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.evi.max" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- NDWI Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              NDWI: {{ Math.min(filters.ndwi.min, filters.ndwi.max).toFixed(2) }} - {{ Math.max(filters.ndwi.min, filters.ndwi.max).toFixed(2) }}
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.ndwi.min.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.ndwi.min" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.ndwi.max.toFixed(2) }}</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.ndwi.max" 
+                  min="-1" 
+                  max="1" 
+                  step="0.01"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Soil Moisture Filter -->
+          <div class="filter-item">
+            <label class="filter-label">
+              Umiditate Sol (%): {{ Math.min(filters.soilMoisture.min, filters.soilMoisture.max).toFixed(1) }}% - {{ Math.max(filters.soilMoisture.min, filters.soilMoisture.max).toFixed(1) }}%
+            </label>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span class="range-label">Min: {{ filters.soilMoisture.min.toFixed(1) }}%</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.soilMoisture.min" 
+                  min="0" 
+                  max="100" 
+                  step="0.1"
+                  class="range-slider"
+                />
+              </div>
+              <div class="range-input-group">
+                <span class="range-label">Max: {{ filters.soilMoisture.max.toFixed(1) }}%</span>
+                <input 
+                  type="range" 
+                  v-model.number="filters.soilMoisture.max" 
+                  min="0" 
+                  max="100" 
+                  step="0.1"
+                  class="range-slider"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div 
-        v-for="report in reports" 
+        v-for="report in filteredReports" 
         :key="report.id"
         class="report-card"
       >
@@ -84,6 +286,11 @@
       <p>Nu există rapoarte pentru această locație.</p>
     </div>
     
+    <div v-if="selectedLocationId && reports.length > 0 && filteredReports.length === 0" class="empty-state">
+      <p>Nu s-au găsit rapoarte care să corespundă filtrilor selectate.</p>
+      <button @click="resetFilters" class="reset-filters-action-btn">Resetează Filtrele</button>
+    </div>
+    
     <div v-if="!selectedLocationId && locations.length === 0" class="empty-state">
       <p>Nu aveți locații salvate.</p>
       <p class="hint">Mergeți la "Locații Salvate" pentru a adăuga o locație.</p>
@@ -103,9 +310,14 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['location-selected', 'view-full-report', 'report-deleted']);
+const emit = defineEmits(['refresh', 'location-selected', 'view-full-report', 'report-deleted']);
 
 const deletingReportId = ref(null);
+const filtersExpanded = ref(false); // Start collapsed
+
+const toggleFilters = () => {
+  filtersExpanded.value = !filtersExpanded.value;
+};
 
 const handleDeleteReport = async (report) => {
   if (!confirm(`Ești sigur că vrei să ștergi raportul din ${formatDate(report.reportDate)}?`)) {
@@ -117,9 +329,10 @@ const handleDeleteReport = async (report) => {
   try {
     await deleteReport(report.id);
     emit('report-deleted', report.id);
-    // Reîncarcă rapoartele pentru locația curentă
+    // Reload reports for current location
     await loadReports();
     alert('Raportul a fost șters cu succes.');
+    emit('refresh');
   } catch (error) {
     console.error('Error deleting report:', error);
     alert('Eroare la ștergerea raportului. Vă rugăm încercați din nou.');
@@ -131,6 +344,94 @@ const handleDeleteReport = async (report) => {
 const reports = ref([]);
 const locations = ref([]);
 const locationReportCounts = ref({});
+
+// Filter state
+const filters = ref({
+  ndvi: { min: -1.0, max: 1.0 },
+  temperature: { min: -50, max: 60 },
+  precipitation: { min: 0, max: 200 },
+  evi: { min: -1.0, max: 1.0 },
+  ndwi: { min: -1.0, max: 1.0 },
+  soilMoisture: { min: 0, max: 100 }
+});
+
+// Filtered reports based on filter criteria
+const filteredReports = computed(() => {
+  return reports.value.filter(report => {
+    // NDVI filter (ensure min <= max)
+    const ndvi = report.ndviValue;
+    if (ndvi !== null && ndvi !== undefined) {
+      const ndviMin = Math.min(filters.value.ndvi.min, filters.value.ndvi.max);
+      const ndviMax = Math.max(filters.value.ndvi.min, filters.value.ndvi.max);
+      if (ndvi < ndviMin || ndvi > ndviMax) {
+        return false;
+      }
+    }
+    
+    // Temperature filter (ensure min <= max)
+    const temp = report.temperatureValue;
+    if (temp !== null && temp !== undefined) {
+      const tempMin = Math.min(filters.value.temperature.min, filters.value.temperature.max);
+      const tempMax = Math.max(filters.value.temperature.min, filters.value.temperature.max);
+      if (temp < tempMin || temp > tempMax) {
+        return false;
+      }
+    }
+    
+    // Precipitation filter (ensure min <= max)
+    const precip = report.precipitationValue;
+    if (precip !== null && precip !== undefined) {
+      const precipMin = Math.min(filters.value.precipitation.min, filters.value.precipitation.max);
+      const precipMax = Math.max(filters.value.precipitation.min, filters.value.precipitation.max);
+      if (precip < precipMin || precip > precipMax) {
+        return false;
+      }
+    }
+    
+    // EVI filter (ensure min <= max)
+    const evi = report.eviValue;
+    if (evi !== null && evi !== undefined) {
+      const eviMin = Math.min(filters.value.evi.min, filters.value.evi.max);
+      const eviMax = Math.max(filters.value.evi.min, filters.value.evi.max);
+      if (evi < eviMin || evi > eviMax) {
+        return false;
+      }
+    }
+    
+    // NDWI filter (ensure min <= max)
+    const ndwi = report.ndwiValue;
+    if (ndwi !== null && ndwi !== undefined) {
+      const ndwiMin = Math.min(filters.value.ndwi.min, filters.value.ndwi.max);
+      const ndwiMax = Math.max(filters.value.ndwi.min, filters.value.ndwi.max);
+      if (ndwi < ndwiMin || ndwi > ndwiMax) {
+        return false;
+      }
+    }
+    
+    // Soil Moisture filter (ensure min <= max)
+    const soilMoisture = report.soilMoisture;
+    if (soilMoisture !== null && soilMoisture !== undefined) {
+      const soilMin = Math.min(filters.value.soilMoisture.min, filters.value.soilMoisture.max);
+      const soilMax = Math.max(filters.value.soilMoisture.min, filters.value.soilMoisture.max);
+      if (soilMoisture < soilMin || soilMoisture > soilMax) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+});
+
+const resetFilters = () => {
+  filters.value = {
+    ndvi: { min: -1.0, max: 1.0 },
+    temperature: { min: -50, max: 60 },
+    precipitation: { min: 0, max: 200 },
+    evi: { min: -1.0, max: 1.0 },
+    ndwi: { min: -1.0, max: 1.0 },
+    soilMoisture: { min: 0, max: 100 }
+  };
+};
 
 const selectedLocationName = computed(() => {
   if (!props.selectedLocationId) return '';
@@ -153,23 +454,23 @@ const formatDate = (dateString) => {
 const cleanAIInterpretation = (interpretation) => {
   if (!interpretation) return '';
   
-  // Încearcă să parseze ca JSON
+  // Try to parse as JSON
   try {
     const parsed = JSON.parse(interpretation);
-    // Dacă e un obiect JSON cu câmpul "interpretation", extrage-l
+    // If it's a JSON object with "interpretation" field, extract it
     if (parsed && typeof parsed === 'object' && parsed.interpretation) {
       return parsed.interpretation;
     }
-    // Dacă e un string JSON, returnează direct
+    // If it's a JSON string, return directly
     if (typeof parsed === 'string') {
       return parsed;
     }
   } catch (e) {
-    // Nu e JSON valid, continuă cu procesarea string-ului
+    // Not valid JSON, continue with string processing
   }
   
-  // Dacă conține JSON embedded, încearcă să extragă interpretarea folosind regex mai robust
-  // Caută pattern: "interpretation": "..." sau "interpretation":"..."
+  // If contains embedded JSON, try to extract interpretation using more robust regex
+  // Look for pattern: "interpretation": "..." or "interpretation":"..."
   const jsonMatch = interpretation.match(/"interpretation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (jsonMatch && jsonMatch[1]) {
     return jsonMatch[1]
@@ -179,19 +480,19 @@ const cleanAIInterpretation = (interpretation) => {
       .replace(/\\\\/g, '\\');
   }
   
-  // Elimină prefixe/sufixe comune din mock responses
+  // Remove common prefixes/suffixes from mock responses
   let cleaned = interpretation
-    .replace(/^.*?"interpretation"\s*:\s*"/, '') // Elimină până la "interpretation": "
-    .replace(/"\s*,\s*"timestamp".*$/, '') // Elimină ", "timestamp": ... la sfârșit
-    .replace(/^.*?mockAI.*?interpretation.*?:/, '') // Elimină mockAI și interpretation:
-    .replace(/,\s*"timestamp".*$/, '') // Elimină timestamp la sfârșit
-    .replace(/^[\s"{]*/, '') // Elimină spații, {, " la început
-    .replace(/[\s"}]*$/, '') // Elimină spații, }, " la sfârșit
-    .replace(/^Analiza\s+pentru\s+prompt\s*:\s*/i, '') // Elimină "Analiza pentru prompt:"
-    .replace(/^Analiza\s+pentru\s+prompt\s*/i, '') // Elimină variante fără ":"
+    .replace(/^.*?"interpretation"\s*:\s*"/, '')
+    .replace(/"\s*,\s*"timestamp".*$/, '')
+    .replace(/^.*?mockAI.*?interpretation.*?:/, '')
+    .replace(/,\s*"timestamp".*$/, '')
+    .replace(/^[\s"{]*/, '')
+    .replace(/[\s"}]*$/, '')
+    .replace(/^Analiza\s+pentru\s+prompt\s*:\s*/i, '')
+    .replace(/^Analiza\s+pentru\s+prompt\s*/i, '')
     .trim();
   
-  return cleaned || interpretation; // Dacă totul e gol, returnează originalul
+  return cleaned || interpretation;
 };
 
 const selectLocation = (locationId) => {
@@ -200,6 +501,16 @@ const selectLocation = (locationId) => {
 
 const clearSelection = () => {
   emit('location-selected', null);
+};
+
+const handleRefresh = async () => {
+  // Reload locations and reports
+  await loadLocations();
+  if (props.selectedLocationId) {
+    await loadReports();
+  }
+  // Emite evenimentul pentru parent component
+  emit('refresh');
 };
 
 const loadLocations = async () => {
@@ -229,7 +540,7 @@ const loadReports = async () => {
   
   try {
     reports.value = await getLocationReports(props.selectedLocationId);
-    // Sortează rapoartele după dată (cele mai noi primul)
+    // Sort reports by date (newest first)
     reports.value.sort((a, b) => {
       const dateA = new Date(a.reportDate);
       const dateB = new Date(b.reportDate);
@@ -295,6 +606,19 @@ h2 {
   font-size: 0.9em;
   font-weight: 600;
   transition: all 0.3s ease;
+}
+.refresh-btn {
+  padding: 8px 15px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.refresh-btn:hover {
+  background: #2980b9;
 }
 
 .back-btn:hover {
@@ -480,6 +804,31 @@ h2 {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.delete-report-btn {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.delete-report-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+}
+
+.delete-report-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -496,6 +845,171 @@ h2 {
   margin-top: 10px;
   font-style: italic;
   color: #9ca3af;
+}
+
+.filter-panel {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.filter-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filter-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.toggle-filters-btn {
+  padding: 6px 12px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.toggle-filters-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #764ba2;
+  color: #764ba2;
+}
+
+.reset-filters-btn {
+  padding: 8px 16px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.reset-filters-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #764ba2;
+  color: #764ba2;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.filter-item {
+  background: white;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.filter-label {
+  display: block;
+  margin-bottom: 12px;
+  color: #374151;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.range-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.range-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.range-label {
+  font-size: 0.8em;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.range-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.reset-filters-action-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.reset-filters-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 </style>
 

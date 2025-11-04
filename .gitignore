@@ -1,0 +1,69 @@
+# Maven (Spring Boot)
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# .NET / C# / WPF
+bin/
+obj/
+*.csproj.user
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.exe
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+.vs/
+*.vsidx
+*.vsidxx
+.vs/
+
+# Node.js / Frontend
+node_modules/
+dist/
+dist-ssr/
+.npm
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.apt_generated
+.factorypath
+.project
+.springBeans
+.sts4-cache
+
+# OS
+.DS_Store
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# Sensitive files - API Keys and Secrets
+crop-health-advisor/src/main/resources/application.properties
+
+# But keep a template
+!crop-health-advisor/src/main/resources/application.properties.template
+!crop-health-advisor/src/main/resources/application.properties.example
+
+# Temporary files
+*.tmp
+*.temp
+npm
+

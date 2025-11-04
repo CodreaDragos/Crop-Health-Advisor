@@ -29,11 +29,13 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
-    // LOGIN
+    /**
+     * Authenticates user and returns JWT token.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            // Autentificarea folosind NoOpPasswordEncoder (fara criptare)
+            // Authentication using NoOpPasswordEncoder (no encryption)
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -43,7 +45,7 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Genereaza token-ul
+            // Generate token
             String jwt = tokenProvider.generateToken(authentication);
 
             return ResponseEntity.ok(new JwtAuthResponse(jwt));
@@ -56,14 +58,16 @@ public class AuthController {
         }
     }
 
-    // REGISTER (Foloseste controller-ul existent pentru salvarea in baza de date)
+    /**
+     * Registers a new user.
+     */
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@Valid @RequestBody User user) {
         if (userService.findByEmail(user.getEmail()).isPresent()) {
             return new ResponseEntity<>("Email-ul este deja folosit!", HttpStatus.BAD_REQUEST);
         }
         
-        // Parola este salvată "ca text" datorită NoOpPasswordEncoder
+        // Password is saved as plain text due to NoOpPasswordEncoder
         userService.save(user); 
 
         return new ResponseEntity<>("Utilizatorul s-a înregistrat cu succes!", HttpStatus.OK);
