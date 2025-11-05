@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DTO pentru datele primite de la Sentinel Hub Statistical API
+ * DTO for data received from Sentinel Hub Statistical API
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SatelliteDataDTO {
@@ -35,7 +35,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Clasă pentru datele time-series
+     * Class for time-series data
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TimeSeriesData {
@@ -63,7 +63,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Interval de timp
+     * Time interval
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Interval {
@@ -91,7 +91,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Valori de output (NDVI, EVI, etc.)
+     * Output values ​​(NDVI, EVI, etc.)
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class OutputValue {
@@ -119,7 +119,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Statistici agregate (media, min, max, stdDev)
+     * Aggregate statistics (mean, min, max, stdDev)
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Statistics {
@@ -180,7 +180,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Valori bin (histogramă)
+     * Bin values ​​(histogram)
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BinValue {
@@ -219,7 +219,7 @@ public class SatelliteDataDTO {
     }
     
     /**
-     * Informații despre agregare
+     * Aggregation Information
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AggregationInfo {

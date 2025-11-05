@@ -12,7 +12,6 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    // Secretul token-ului. Pune-l in application.properties!
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
@@ -20,7 +19,6 @@ public class JwtTokenProvider {
     private int jwtExpirationInMs;
 
     public String generateToken(Authentication authentication) {
-        // Obtine UserDetails (care contine username-ul) din obiectul Authentication
         User userPrincipal = (User) authentication.getPrincipal();
 
         Date now = new Date();
@@ -47,7 +45,6 @@ public class JwtTokenProvider {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
             return true;
         } catch (Exception ex) {
-            // Aici se pot loga erorile de token invalid, expirat, etc.
             return false;
         }
     }

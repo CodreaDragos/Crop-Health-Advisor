@@ -42,7 +42,7 @@ namespace CropHealth_Desktop.Interface
                 PrecipitationValueTextBox.Text = _editReport.precipitationValue.ToString(CultureInfo.InvariantCulture);
                 AiInterpretationTextBox.Text = _editReport.aiInterpretation ?? "";
                 
-                // Setează data și ora
+                // Select the date and time
                 if (_editReport.reportDate != null && _editReport.reportDate != default(DateTime))
                 {
                     ReportDateDatePicker.SelectedDate = _editReport.reportDate.Date;
@@ -114,14 +114,14 @@ namespace CropHealth_Desktop.Interface
             ErrorTextBlock.Visibility = Visibility.Collapsed;
             ErrorTextBlock.Text = "";
 
-            // Validare
+     
             if (LocationComboBox.SelectedItem == null)
             {
                 ShowError("Te rugăm selectează o locație!");
                 return;
             }
 
-            // Validare NDVI
+   
             if (string.IsNullOrWhiteSpace(NdviValueTextBox.Text))
             {
                 ShowError("Valoarea NDVI este obligatorie!");
@@ -140,7 +140,7 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validate temperature
+  
             if (string.IsNullOrWhiteSpace(TemperatureValueTextBox.Text))
             {
                 ShowError("Temperatura este obligatorie!");
@@ -159,7 +159,7 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validate precipitation
+ 
             if (string.IsNullOrWhiteSpace(PrecipitationValueTextBox.Text))
             {
                 ShowError("Precipitațiile sunt obligatorii!");
@@ -185,7 +185,7 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validate and parse time
+ 
             DateTime reportDate;
             if (!DateTime.TryParseExact(ReportTimeTextBox.Text, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime time))
             {

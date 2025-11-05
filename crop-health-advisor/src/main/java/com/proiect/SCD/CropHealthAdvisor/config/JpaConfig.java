@@ -10,7 +10,7 @@ public class JpaConfig {
     @Bean
     public HibernatePropertiesCustomizer hibernatePropertiesCustomizer() {
         return hibernateProperties -> {
-            // Dezactiveaza schema dropping pentru a evita erorile la foreign key-uri
+            // Disable schema dropping to avoid foreign key errors
             hibernateProperties.put("hibernate.hbm2ddl.auto", "validate");
             hibernateProperties.put("hibernate.schema-generation.script.action", "none");
         };

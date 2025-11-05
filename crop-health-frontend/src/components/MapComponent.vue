@@ -74,7 +74,7 @@ const props = defineProps({
   }
 });
 
-// Definim variabilele reactive
+//  define the reactive variables
 const zoom = ref(10);
 const center = ref([46.77, 23.62]);
 const useSatellite = ref(false);
@@ -94,7 +94,7 @@ const satelliteAttribution = ref(
 
 const marker = ref(null);
 
-// Definim evenimentul personalizat (Emits)
+//  define the personalized event (Emits)
 const emit = defineEmits(["location-selected", "save-location-clicked"]);
 
 const updateLayer = () => {

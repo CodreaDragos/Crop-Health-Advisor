@@ -1,7 +1,7 @@
 package com.proiect.SCD.CropHealthAdvisor.dto;
 
 /**
- * DTO simplificat pentru metricile calculate din datele Sentinel Hub
+ * Simplified DTO for metrics calculated from Sentinel Hub data
  */
 public class SatelliteMetricsDTO {
     private double ndvi;

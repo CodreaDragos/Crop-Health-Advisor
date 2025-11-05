@@ -115,7 +115,7 @@ namespace CropHealth_Desktop.Interface
             var locationForm = new LocationFormWindow(_apiService, null, _allUsers);
             if (locationForm.ShowDialog() == true)
             {
-                LoadLocations(); // Reload list after add
+                LoadLocations(); 
             }
         }
 
@@ -134,7 +134,7 @@ namespace CropHealth_Desktop.Interface
                 var locationForm = new LocationFormWindow(_apiService, location, _allUsers);
                 if (locationForm.ShowDialog() == true)
                 {
-                    LoadLocations(); // Reîncarcă lista după editare
+                    LoadLocations();
                 }
             }
         }
@@ -158,7 +158,7 @@ namespace CropHealth_Desktop.Interface
                         await _apiService.DeleteLocationAsync(location.id);
                         MessageBox.Show("Locația a fost ștearsă cu succes!", 
                             "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
-                        LoadLocations(); // Reîncarcă lista
+                        LoadLocations(); 
                     }
                     catch (Exception ex)
                     {

@@ -62,7 +62,7 @@ namespace CropHealth_Desktop.Interface
             ErrorTextBlock.Visibility = Visibility.Collapsed;
             ErrorTextBlock.Text = "";
 
-            // Validare
+
             if (string.IsNullOrWhiteSpace(NameTextBox.Text))
             {
                 ShowError("Numele locației este obligatoriu!");
@@ -81,7 +81,6 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validare latitudine
             if (!double.TryParse(LatitudeTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double latitude))
             {
                 ShowError("Latitudinea trebuie să fie un număr valid!");
@@ -94,7 +93,6 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validare longitudine
             if (!double.TryParse(LongitudeTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double longitude))
             {
                 ShowError("Longitudinea trebuie să fie un număr valid!");
@@ -107,7 +105,7 @@ namespace CropHealth_Desktop.Interface
                 return;
             }
 
-            // Validare utilizator
+
             if (UserComboBox.SelectedItem == null)
             {
                 ShowError("Te rugăm selectează un utilizator!");

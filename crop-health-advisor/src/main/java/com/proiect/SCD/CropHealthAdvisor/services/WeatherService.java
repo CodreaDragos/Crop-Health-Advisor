@@ -8,8 +8,8 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 /**
- * Serviciu pentru obținerea datelor meteorologice (temperatură, precipitații)
- * Folosește OpenWeatherMap API (gratuit până la 1000 requests/zi)
+ * Service for obtaining weather data (temperature, precipitation)
+* Uses OpenWeatherMap API (free up to 1000 requests/day)
  */
 @Service
 public class WeatherService {
@@ -26,7 +26,7 @@ public class WeatherService {
     }
     
     /**
-     * Obține temperatura și precipitațiile pentru o locație
+     * Get temperature and precipitation for a location
      * @param lat Latitude
      * @param lon Longitude
      * @return Map with "temperature" (in °C) and "precipitation" (in mm)

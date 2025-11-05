@@ -212,7 +212,7 @@ SCD-proiect/
    openweathermap.api.key=your-api-key
    ```
 
-#### Gemini AI (Optional)
+#### Gemini AI 
 1. Get API key from Google Cloud
 2. Add to `application.properties`:
    ```properties

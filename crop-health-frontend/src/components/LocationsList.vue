@@ -164,7 +164,7 @@ const clearSearch = () => {
 };
 
 const handleDeleteLocation = async (location) => {
-  // Confirmare de la utilizator
+  // Confirmation from the user
   const reportCount = props.locationReports[location.id]?.length || 0;
   const message = reportCount > 0
     ? `Ești sigur că vrei să ștergi locația "${location.name}"? \n\nAceasta va șterge și ${reportCount} raport(e) asociate.`
@@ -205,23 +205,24 @@ const formatDate = (dateString) => {
 const cleanAIInterpretation = (interpretation) => {
   if (!interpretation) return '';
   
-  // Încearcă să parseze ca JSON
+
   try {
     const parsed = JSON.parse(interpretation);
-    // Dacă e un obiect JSON cu câmpul "interpretation", extrage-l
+
     if (parsed && typeof parsed === 'object' && parsed.interpretation) {
       return parsed.interpretation;
     }
-    // Dacă e un string JSON, returnează direct
+
     if (typeof parsed === 'string') {
       return parsed;
     }
   } catch (e) {
-    // Nu e JSON valid, continuă cu procesarea string-ului
+
   }
   
-  // Dacă conține JSON embedded, încearcă să extragă interpretarea folosind regex mai robust
-  // Caută pattern: "interpretation": "..." sau "interpretation":"..."
+
+// If it contains embedded JSON, try to extract the interpretation using more robust regex
+// Look for pattern: "interpretation": "..." or "interpretation":"..."
   const jsonMatch = interpretation.match(/"interpretation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (jsonMatch && jsonMatch[1]) {
     return jsonMatch[1]
@@ -231,19 +232,20 @@ const cleanAIInterpretation = (interpretation) => {
       .replace(/\\\\/g, '\\');
   }
   
-  // Elimină prefixe/sufixe comune din mock responses
+
+// Remove common prefixes/suffixes from mock responses
   let cleaned = interpretation
-    .replace(/^.*?"interpretation"\s*:\s*"/, '') // Elimină până la "interpretation": "
-    .replace(/"\s*,\s*"timestamp".*$/, '') // Elimină ", "timestamp": ... la sfârșit
-    .replace(/^.*?mockAI.*?interpretation.*?:/, '') // Elimină mockAI și interpretation:
-    .replace(/,\s*"timestamp".*$/, '') // Elimină timestamp la sfârșit
-    .replace(/^[\s"{]*/, '') // Elimină spații, {, " la început
-    .replace(/[\s"}]*$/, '') // Elimină spații, }, " la sfârșit
-    .replace(/^Analiza\s+pentru\s+prompt\s*:\s*/i, '') // Elimină "Analiza pentru prompt:"
-    .replace(/^Analiza\s+pentru\s+prompt\s*/i, '') // Elimină variante fără ":"
+    .replace(/^.*?"interpretation"\s*:\s*"/, '') 
+    .replace(/"\s*,\s*"timestamp".*$/, '') 
+    .replace(/^.*?mockAI.*?interpretation.*?:/, '')
+    .replace(/,\s*"timestamp".*$/, '') 
+    .replace(/^[\s"{]*/, '') 
+    .replace(/[\s"}]*$/, '') 
+    .replace(/^Analiza\s+pentru\s+prompt\s*:\s*/i, '') 
+    .replace(/^Analiza\s+pentru\s+prompt\s*/i, '') 
     .trim();
   
-  return cleaned || interpretation; // Dacă totul e gol, returnează originalul
+  return cleaned || interpretation; 
 };
 </script>
 

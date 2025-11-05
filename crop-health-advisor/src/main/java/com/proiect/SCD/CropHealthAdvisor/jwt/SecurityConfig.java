@@ -11,7 +11,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder; // Folosit temporar
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -34,8 +34,6 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter();
     }
 
-    // ATENTIE: Folosim NoOpPasswordEncoder DOAR pentru testare FARA criptare.
-    // In productie, acesta trebuie inlocuit cu BCryptPasswordEncoder!
     @Bean
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();
@@ -86,7 +84,6 @@ public class SecurityConfig {
                 .anyRequest().authenticated() 
             );
 
-        // Adauga filtrul nostru JWT inainte de filtrul standard de user/parola
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

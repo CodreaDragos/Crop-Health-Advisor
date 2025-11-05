@@ -509,7 +509,6 @@ const handleRefresh = async () => {
   if (props.selectedLocationId) {
     await loadReports();
   }
-  // Emite evenimentul pentru parent component
   emit('refresh');
 };
 

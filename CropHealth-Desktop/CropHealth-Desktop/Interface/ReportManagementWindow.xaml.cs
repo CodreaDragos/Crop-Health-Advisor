@@ -137,7 +137,7 @@ namespace CropHealth_Desktop.Interface
             var reportForm = new ReportFormWindow(_apiService, null, _allLocations, _allUsers);
             if (reportForm.ShowDialog() == true)
             {
-                LoadReports(); // Reload list after add
+                LoadReports();
             }
         }
 
@@ -156,7 +156,7 @@ namespace CropHealth_Desktop.Interface
                 var reportForm = new ReportFormWindow(_apiService, report, _allLocations, _allUsers);
                 if (reportForm.ShowDialog() == true)
                 {
-                    LoadReports(); // Reîncarcă lista după editare
+                    LoadReports(); 
                 }
             }
         }
@@ -180,7 +180,7 @@ namespace CropHealth_Desktop.Interface
                         await _apiService.DeleteReportAsync(report.id);
                         MessageBox.Show("Raportul a fost șters cu succes!", 
                             "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
-                        LoadReports(); // Reîncarcă lista
+                        LoadReports(); 
                     }
                     catch (Exception ex)
                     {
